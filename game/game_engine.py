@@ -27,6 +27,8 @@ class GameEngine:
 
         self.player_score = 0
         self.cpu_score = 0
+        self.target_score = 5
+        self.game_state = "PLAYING"
 
         self.round_resolved_time = 0
         self.display_duration = 1800
@@ -51,6 +53,9 @@ class GameEngine:
         return rules.get((player, cpu), "TIE")
 
     def play_round(self, choice):
+        if self.game_state == "GAME_OVER":
+            return
+
         self.player_choice = choice
         self.cpu_choice = random.choice(self.choices)
 
@@ -67,17 +72,39 @@ class GameEngine:
             self.result_text = f"It's a Draw! Both picked {self.player_choice}."
             self.result_color = (240, 210, 80)
 
+        if self.player_score >= self.target_score or self.cpu_score >= self.target_score:
+            self.game_state = "GAME_OVER"
+
         self.showing_result = True
         self.round_resolved_time = pygame.time.get_ticks()
 
     def handle_event(self, event):
+        if self.game_state == "GAME_OVER":
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                self.reset_match()
+            return
+
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for btn in self.buttons:
                 if btn.contains(event.pos):
                     self.play_round(btn.choice_name)
                     break
 
+    def reset_match(self):
+        self.player_score = 0
+        self.cpu_score = 0
+        self.player_choice = None
+        self.cpu_choice = None
+        self.result_text = "Make your move!"
+        self.result_color = (220, 225, 235)
+        self.showing_result = False
+        self.round_resolved_time = 0
+        self.game_state = "PLAYING"
+
     def update(self):
+        if self.game_state == "GAME_OVER":
+            return
+
         now = pygame.time.get_ticks()
         if self.showing_result and (now - self.round_resolved_time >= self.display_duration):
             self.player_choice = None
@@ -88,6 +115,18 @@ class GameEngine:
 
     def render(self, screen):
         screen.fill((24, 28, 36))
+
+        if self.game_state == "GAME_OVER":
+            champion = "Player" if self.player_score >= self.target_score else "CPU"
+            champion_surf = self.font_title.render(f"{champion} Wins the Match!", True, (245, 245, 245))
+            score_surf = self.font_arena.render(
+                f"Final Score: {self.player_score} - {self.cpu_score}", True, (220, 225, 235)
+            )
+            reset_surf = self.font_hud.render("Press R to play again", True, (190, 195, 205))
+            screen.blit(champion_surf, (self.width // 2 - champion_surf.get_width() // 2, 105))
+            screen.blit(score_surf, (self.width // 2 - score_surf.get_width() // 2, 160))
+            screen.blit(reset_surf, (self.width // 2 - reset_surf.get_width() // 2, 215))
+            return
 
         title_surf = self.font_title.render("Rock Paper Scissors", True, (245, 245, 245))
         screen.blit(title_surf, (self.width // 2 - title_surf.get_width() // 2, 14))
