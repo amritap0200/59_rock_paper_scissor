@@ -40,15 +40,13 @@ class GameEngine:
         if player == cpu:
             return "TIE"
         
-        # BUG SYMPTOM: 
-        # All winning matchups are inverted, causing player choices to lose against what they normally beat.
         rules = {
-            ("ROCK", "SCISSORS"): "CPU",
-            ("SCISSORS", "PAPER"): "CPU",
-            ("PAPER", "ROCK"): "CPU",
-            ("SCISSORS", "ROCK"): "PLAYER",
-            ("PAPER", "SCISSORS"): "PLAYER",
-            ("ROCK", "PAPER"): "PLAYER",
+            ("ROCK", "SCISSORS"): "PLAYER",
+            ("SCISSORS", "PAPER"): "PLAYER",
+            ("PAPER", "ROCK"): "PLAYER",
+            ("SCISSORS", "ROCK"): "CPU",
+            ("PAPER", "SCISSORS"): "CPU",
+            ("ROCK", "PAPER"): "CPU",
         }
         return rules.get((player, cpu), "TIE")
 
