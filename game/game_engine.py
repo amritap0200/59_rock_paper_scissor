@@ -29,6 +29,10 @@ class GameEngine:
         self.cpu_score = 0
         self.target_score = 5
         self.game_state = "PLAYING"
+        self.player_history = []
+        self.history_window = 10
+        self.adaptive_threshold = 0.5
+        self.counter_bias = 0.7
 
         self.round_resolved_time = 0
         self.display_duration = 1800
@@ -52,12 +56,36 @@ class GameEngine:
         }
         return rules.get((player, cpu), "TIE")
 
+    def choose_cpu_choice(self):
+        if len(self.player_history) < 3:
+            return random.choice(self.choices)
+
+        counts = {choice: self.player_history.count(choice) for choice in self.choices}
+        favored_choice = max(self.choices, key=lambda choice: counts[choice])
+        frequency = counts[favored_choice] / len(self.player_history)
+        if frequency < self.adaptive_threshold:
+            return random.choice(self.choices)
+
+        counters = {
+            "ROCK": "PAPER",
+            "PAPER": "SCISSORS",
+            "SCISSORS": "ROCK",
+        }
+        counter_choice = counters[favored_choice]
+        if random.random() < self.counter_bias:
+            return counter_choice
+
+        alternatives = [choice for choice in self.choices if choice != counter_choice]
+        return random.choice(alternatives)
+
     def play_round(self, choice):
         if self.game_state == "GAME_OVER":
             return
 
         self.player_choice = choice
-        self.cpu_choice = random.choice(self.choices)
+        self.player_history.append(choice)
+        self.player_history = self.player_history[-self.history_window:]
+        self.cpu_choice = self.choose_cpu_choice()
 
         outcome = self.determine_winner(self.player_choice, self.cpu_choice)
         if outcome == "PLAYER":
@@ -93,6 +121,7 @@ class GameEngine:
     def reset_match(self):
         self.player_score = 0
         self.cpu_score = 0
+        self.player_history.clear()
         self.player_choice = None
         self.cpu_choice = None
         self.result_text = "Make your move!"
